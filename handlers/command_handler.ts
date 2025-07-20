@@ -1,5 +1,8 @@
+import { isMessageType } from "@mtkruto/mtkruto";
 import { HandleFuncResult, HandlerFuncParams } from "./handler.ts";
 import { MessageHandler, MessageHandlerParams } from "./message_handler.ts";
+import { getReplyMessage } from "../helpers.ts";
+
 import env from "../env.ts";
 
 export interface CommandHandlerFuncParams {
@@ -7,7 +10,6 @@ export interface CommandHandlerFuncParams {
   input: string;
 }
 
-// deno-lint-ignore ban-types
 export type CommandHandlerFunc<T extends object> = ({
   client,
   event,
@@ -17,24 +19,24 @@ export type CommandHandlerFunc<T extends object> = ({
 export interface CommandHandlerParams extends MessageHandlerParams {
   aliases?: string[];
   rawArgs?: boolean;
-  rawInput?: boolean;
+  // rawInput?: boolean;
 }
 
 export class CommandHandler extends MessageHandler<CommandHandlerFuncParams> {
   constructor(
     public name: string,
-    public func: CommandHandlerFunc<CommandHandlerFuncParams>,
-    public params: CommandHandlerParams = {},
+    public override func: CommandHandlerFunc<CommandHandlerFuncParams>,
+    public override params: CommandHandlerParams = {}
   ) {
     super(func, params);
-    this.params.rawInput = this.params.rawInput ?? true;
+    // this.params.rawInput = this.params.rawInput ?? true;
   }
 
-  async check({ client, event }: HandlerFuncParams) {
+  override async check({ client, event }: HandlerFuncParams) {
     if (!(await super.check({ client, event }))) {
       return false;
     }
-    const { text } = event.message;
+    const { text } = event.msg;
     if (![env.COMMAND_PREFIX, env.INPUT_PREFIX].includes(text[0])) {
       return false;
     }
@@ -42,26 +44,24 @@ export class CommandHandler extends MessageHandler<CommandHandlerFuncParams> {
     return this.name == command || !!this.params.aliases?.includes(command);
   }
 
-  async handle({ client, event }: HandlerFuncParams) {
-    const { text, message } = event.message;
-    const args = (this.params.rawArgs ? message : text)
+  override async handle({ client, event }: HandlerFuncParams) {
+    const { text } = event.msg;
+    const args = text // (this.params.rawArgs ? message : text)
       .split("\n")[0]
       .split(/\s/)
       .slice(1);
     let input = "";
-    const inputType = message[0];
-    const reply = await event.message.getReplyMessage();
+    const inputType = text[0];
+    const reply = await getReplyMessage(client, event);
     switch (inputType) {
       case env.COMMAND_PREFIX:
-        input = (this.params.rawInput ? message : text)
-          .split("\n")
-          .slice(1)
-          .join("\n")
-          .trim();
+        // input = (this.params.rawInput ? message : text)
+        input = text.split("\n").slice(1).join("\n").trim();
         break;
       case env.INPUT_PREFIX:
-        if (reply && reply.text) {
-          input = this.params.rawInput ? reply.message : reply.text;
+        if (reply && isMessageType(reply, "text")) {
+          // input = this.params.rawInput ? reply.message : reply.text;
+          input = reply.text;
         }
     }
     await this.func({ client, event, args, input });

@@ -1,10 +1,12 @@
-import * as log from "std/log/mod.ts";
-import { join, resolve, toFileUrl } from "std/path/mod.ts";
-import { Api, TelegramClient } from "$grm";
+import * as log from "@std/log";
+import { join, resolve, toFileUrl } from "@std/path";
+import { isMessageType } from "@mtkruto/mtkruto";
+
 import { bold, fmt } from "./deps.ts";
 import { CommandHandler, End, Event } from "./handlers/mod.ts";
-import { updateMessage } from "./helpers.ts";
+import { downloadDocument, getReplyMessage, updateMessage } from "./helpers.ts";
 import { getHelp, isModule, Module } from "./module.ts";
+import { Client } from "./client.ts";
 
 const externals = "externals";
 
@@ -16,30 +18,31 @@ export function managerModule(manager: ModuleManager): Module {
         let spec = args[0] ?? "";
         let path: string | undefined;
         if (!spec) {
-          const reply = await event.message.getReplyMessage();
-          if (!reply) {
+          const reply = await getReplyMessage(client, event);
+
+          if (!reply || !isMessageType(reply, "document")) {
             return;
           }
-          const { media } = reply;
+
           if (
-            !(media instanceof Api.MessageMediaDocument) ||
-            !(media.document instanceof Api.Document) ||
-            !(media.document.attributes[0] instanceof
-              Api.DocumentAttributeFilename) ||
-            !media.document.attributes[0].fileName.endsWith(".ts") ||
-            media.document.size.gt(5000)
+            reply.document.fileSize > 5000 ||
+            !reply.document.fileName.endsWith(".ts")
           ) {
             return;
           }
-          const result = await client.downloadMedia(media, {});
+          const result = await downloadDocument(client, reply);
           if (!result) {
-            await updateMessage(event, "Could not download the module.");
+            await updateMessage(
+              client,
+              event,
+              "Could not download the module."
+            );
             return;
           }
-          path = join(externals, `.${media.document.id}.ts`);
+          path = join(externals, `.${reply.document.fileId}.ts`);
           await Deno.writeTextFile(
             path,
-            typeof result === "string" ? result : result.toString(),
+            typeof result === "string" ? result : result.toString()
           );
           spec = ModuleManager.pathToSpec(path);
         }
@@ -47,11 +50,11 @@ export function managerModule(manager: ModuleManager): Module {
         try {
           module = await ModuleManager.file(spec);
         } catch (_err) {
-          await updateMessage(event, "Not a module.");
+          await updateMessage(client, event, "Not a module.");
           return;
         }
         if (manager.modules.has(module.name)) {
-          await updateMessage(event, "Module already installed.");
+          await updateMessage(client, event, "Module already installed.");
           return;
         }
         manager.install(module, true);
@@ -60,9 +63,9 @@ export function managerModule(manager: ModuleManager): Module {
         } else {
           localStorage.setItem(`module_${module.name}`, spec);
         }
-        await updateMessage(event, "Module installed.");
+        await updateMessage(client, event, "Module installed.");
       }),
-      new CommandHandler("uninstall", async ({ event, args }) => {
+      new CommandHandler("uninstall", async ({ client, event, args }) => {
         let uninstalled = 0;
         for (const arg of args) {
           const spec = join("externals", `${arg}.ts`);
@@ -82,34 +85,34 @@ export function managerModule(manager: ModuleManager): Module {
           }
         }
         await updateMessage(
+          client,
           event,
           `${uninstalled <= 0 ? "No" : uninstalled} module${
             uninstalled == 1 ? "" : "s"
-          } uninstalled.`,
+          } uninstalled.`
         );
       }),
-      new CommandHandler("disable", async ({ event, args }) => {
+      new CommandHandler("disable", async ({ client, event, args }) => {
         if (args.length == 0) {
           return;
         }
         let disabled = 0;
         for (const arg of args) {
           const module = manager.modules.get(arg);
-          if (
-            module && module[1] && !manager.disabled.has(arg)
-          ) {
+          if (module && module[1] && !manager.disabled.has(arg)) {
             manager.disabled.add(arg);
             disabled++;
           }
         }
         await updateMessage(
+          client,
           event,
           `${disabled <= 0 ? "No" : disabled} module${
             disabled == 1 ? "" : "s"
-          } disabled.`,
+          } disabled.`
         );
       }),
-      new CommandHandler("enable", async ({ event, args }) => {
+      new CommandHandler("enable", async ({ client, event, args }) => {
         if (args.length == 0) {
           return;
         }
@@ -121,10 +124,11 @@ export function managerModule(manager: ModuleManager): Module {
           }
         }
         await updateMessage(
+          client,
           event,
           `${enabled <= 0 ? "No" : enabled} module${
             enabled == 1 ? "" : "s"
-          } enabled.`,
+          } enabled.`
         );
       }),
       new CommandHandler("modules", async ({ event }) => {
@@ -147,28 +151,36 @@ export function managerModule(manager: ModuleManager): Module {
             message += module + "\n";
           }
         }
-        await event.message.reply({ message, parseMode: "markdown" });
+        await event.reply(message, { parseMode: "Markdown" });
       }),
-      new CommandHandler("help", async ({ event, args }) => {
+      new CommandHandler("help", async ({ client, event, args }) => {
         const name = args[0];
         if (!name) {
-          await updateMessage(event, "Pass a module name as an argument.");
+          await updateMessage(
+            client,
+            event,
+            "Pass a module name as an argument."
+          );
           return;
         }
         const module = manager.modules.get(name);
         if (!module) {
-          await updateMessage(event, "This module is not installed.");
+          await updateMessage(client, event, "This module is not installed.");
           return;
         }
         const message = getHelp(module[0]);
         if (!message) {
-          await updateMessage(event, "This module has no help.");
+          await updateMessage(client, event, "This module has no help.");
           return;
         }
-        await event.message.reply({
-          ...(typeof message === "string" ? { message } : message.send),
-          parseMode: "markdown",
-        });
+        await event.reply(
+          typeof message === "string" ? message : message.text,
+          {
+            parseMode: "Markdown",
+            entities:
+              typeof message === "string" ? undefined : message.entities,
+          }
+        );
       }),
     ],
     help: fmt`${bold("Introduction")}
@@ -206,10 +218,7 @@ Sends the help message of a module if existing.`,
 export class ModuleManager {
   modules = new Map<string, [Module, boolean]>();
 
-  constructor(
-    private client: TelegramClient,
-    public disabled = new Set<string>(),
-  ) {}
+  constructor(private client: Client, public disabled = new Set<string>()) {}
 
   handler = async (event: Event) => {
     for (const [, [{ name, handlers }, disableable]] of this.modules) {
@@ -228,7 +237,7 @@ export class ModuleManager {
             try {
               let message = String(err);
               message = message.length <= 1000 ? message : "An error occurred.";
-              await event.message.reply({ message });
+              await event.reply(message);
             } catch (_err) {
               //
             }
@@ -285,7 +294,7 @@ export class ModuleManager {
         const module = await ModuleManager.file(spec);
         modules.push(module);
       } catch (err) {
-        log.warning(`failed to load ${spec}: ${err}`);
+        log.warn(`failed to load ${spec}: ${err}`);
       } finally {
         all++;
       }
@@ -309,11 +318,11 @@ export class ModuleManager {
       const filePath = join(path, name);
       try {
         const mod = await ModuleManager.file(
-          ModuleManager.pathToSpec(filePath),
+          ModuleManager.pathToSpec(filePath)
         );
         modules.push(mod);
       } catch (err) {
-        log.warning(`failed to load ${filePath} from ${path}: ${err}`);
+        log.warn(`failed to load ${filePath} from ${path}: ${err}`);
       } finally {
         all++;
       }

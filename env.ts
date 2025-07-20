@@ -1,5 +1,5 @@
-import * as log from "std/log/mod.ts";
-import "std/dotenv/load.ts";
+import * as log from "@std/log";
+import "@std/dotenv/load";
 import { cleanEnv, makeValidator, num, str } from "./deps.ts";
 
 // https://stackoverflow.com/a/54256858/12250600
@@ -9,8 +9,8 @@ const cmdPrefix = makeValidator((input) => {
   if (PREFIX_REGEX.test(input)) {
     return input;
   }
-  log.warning(
-    "falling back to '\\' for COMMAND_PREFIX: a single symbol excluding @, # and $ was expected",
+  log.warn(
+    "falling back to '\\' for COMMAND_PREFIX: a single symbol excluding @, # and $ was expected"
   );
   Deno.exit();
   return "\\";
@@ -20,8 +20,8 @@ const inputPrefix = makeValidator((input) => {
   if (PREFIX_REGEX.test(input) && input !== Deno.env.get("COMMAND_PREFIX")) {
     return input;
   }
-  log.warning(
-    "falling back to '>' for INPUT_PREFIX: a single symbol excluding @, #, $ and COMMAND_PREFIX was expected",
+  log.warn(
+    "falling back to '>' for INPUT_PREFIX: a single symbol excluding @, #, $ and COMMAND_PREFIX was expected"
   );
   return "\\";
 });

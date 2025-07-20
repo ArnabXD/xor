@@ -1,6 +1,6 @@
-import * as log from "std/log/mod.ts";
-import { getLevelByName } from "std/log/levels.ts";
-import { setup } from "pls";
+import * as log from "@std/log";
+import { getLevelByName } from "@std/log/levels";
+// import { setup } from "pls";
 
 const level = (() => {
   let toReturn = "INFO";
@@ -17,10 +17,10 @@ const level = (() => {
   return toReturn as log.LevelName;
 })();
 
-await log.setup({
+log.setup({
   handlers: {
-    console: new log.handlers.ConsoleHandler(level),
-    file: new log.handlers.FileHandler(level, {
+    console: new log.ConsoleHandler(level),
+    file: new log.FileHandler(level, {
       filename: ".log",
       mode: "a",
     }),
@@ -32,19 +32,19 @@ await log.setup({
   },
 });
 
-let connected = false;
+// let connected = false;
 
-if (Deno.env.get("PLS_CONNECTION_URI")) {
-  try {
-    await setup({ include: [/^module_/] });
-    connected = true;
-  } catch (err) {
-    log.warning(`could not connect to the database: ${err}`);
-  }
-}
+// if (Deno.env.get("PLS_CONNECTION_URI")) {
+//   try {
+//     await setup({ include: [/^module_/] });
+//     connected = true;
+//   } catch (err) {
+//     log.warn(`could not connect to the database: ${err}`);
+//   }
+// }
 
-if (connected) {
-  log.info("connected to the database");
-} else {
-  log.info("not using database");
-}
+// if (connected) {
+//   log.info("connected to the database");
+// } else {
+//   log.info("not using database");
+// }

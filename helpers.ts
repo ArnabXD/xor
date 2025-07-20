@@ -1,30 +1,30 @@
-// This file will include helpers for all modules (built-in and externals).
-import { CustomFile, SendMessageParams } from "$grm";
-import { Buffer } from "$grm-deps";
+import { SendMessageParams, Client, MessageDocument } from "@mtkruto/mtkruto";
 import { Event } from "./handlers/mod.ts";
-import { fmt, pre, type Stringable } from "./deps.ts";
+import { fmt, type Stringable } from "./deps.ts";
 
-export function updateMessage(
-  event: Event,
-  text: Stringable,
-) {
-  return event.message.edit(
-    fmt`${event.message.text}\n${text}`.edit,
-  );
+export function updateMessage(client: Client, event: Event, text: Stringable) {
+  const msg = fmt`${event.msg.text}\n${text}`;
+  return client.editMessageText(event.msg.chat.id, event.msg.id, msg.text, {
+    entities: msg.entities,
+  });
 }
 
-export function longText(
-  text: string,
-  name?: string,
-): SendMessageParams {
-  return text.length > 4096
-    ? {
-      file: new CustomFile(
-        name ?? crypto.randomUUID(),
-        text.length,
-        "",
-        Buffer.from(text),
-      ),
-    }
-    : pre(text.trim(), "").send;
+export function getReplyMessage(client: Client, event: Event) {
+  if (event.msg.replyToMessageId) {
+    return client.getMessage(event.chat.id, event.msg.replyToMessageId);
+  }
+  return null;
+}
+
+export function downloadDocument(client: Client, doc: MessageDocument) {
+  return client.download(doc.document.fileId);
+}
+
+export function longText(_text: string, _name?: string): SendMessageParams {
+  // return text.length > 4096
+  //   ? {
+
+  //     }
+  //   : pre(text.trim(), "").send;
+  return {};
 }

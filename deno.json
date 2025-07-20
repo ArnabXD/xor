@@ -1,7 +1,16 @@
 {
-  "lock": false,
-  "importMap": "./import_map.json",
   "tasks": {
     "run": "deno run -A main.ts"
+  },
+  "imports": {
+    "@mtkruto/mtkruto": "https://deno.land/x/mtkruto/mod.ts",
+    "@mtkruto/filters": "https://deno.land/x/mtkruto/client/0_filters.ts",
+    "@mtkruto/parse": "jsr:@mtkruto/parse@^0.0.1",
+    "@std/dotenv": "jsr:@std/dotenv@^0.225.5",
+    "@std/fs": "jsr:@std/fs@^1.0.19",
+    "@std/log": "jsr:@std/log@^0.224.14",
+    "@std/path": "jsr:@std/path@^1.1.1",
+    "envalid": "npm:envalid@^8.1.0",
+    "$xor": "./xor.ts"
   }
 }

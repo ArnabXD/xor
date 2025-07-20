@@ -1,4 +1,8 @@
-import { EditedMessageEvent, NewMessageEvent, TelegramClient } from "$grm";
+import { Client as MTKrutoClient, Context } from "@mtkruto/mtkruto";
+import type { WithFilter } from "../deps.ts";
+
+export type NewMessageEvent = WithFilter<Context, "message:text">;
+export type EditedMessageEvent = WithFilter<Context, "editedMessage:text">;
 
 export const End = Symbol();
 
@@ -7,16 +11,15 @@ export type Event = NewMessageEvent | EditedMessageEvent;
 export type HandleFuncResult = Promise<void | typeof End>;
 
 export interface HandlerFuncParams {
-  client: TelegramClient;
+  client: MTKrutoClient;
   event: Event;
 }
 
 export abstract class Handler {
-  abstract check(
-    { client, event }: HandlerFuncParams,
-  ): Promise<boolean> | boolean;
+  abstract check({
+    client,
+    event,
+  }: HandlerFuncParams): Promise<boolean> | boolean;
 
-  abstract handle(
-    { client, event }: HandlerFuncParams,
-  ): HandleFuncResult;
+  abstract handle({ client, event }: HandlerFuncParams): HandleFuncResult;
 }
