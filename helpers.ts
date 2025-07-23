@@ -1,30 +1,71 @@
-import { SendMessageParams, Client, MessageDocument } from "@mtkruto/mtkruto";
+import { Client, MessageDocument } from "$mtkruto";
 import { Event } from "./handlers/mod.ts";
 import { fmt, type Stringable } from "./deps.ts";
 
-export function updateMessage(client: Client, event: Event, text: Stringable) {
-  const msg = fmt`${event.msg.text}\n${text}`;
-  return client.editMessageText(event.msg.chat.id, event.msg.id, msg.text, {
-    entities: msg.entities,
-  });
-}
-
-export function getReplyMessage(client: Client, event: Event) {
-  if (event.msg.replyToMessageId) {
-    return client.getMessage(event.chat.id, event.msg.replyToMessageId);
+export async function updateMessage(
+  client: Client,
+  event: Event,
+  text: Stringable,
+): Promise<void> {
+  try {
+    const msg = fmt`${event.msg.text}\n${text}`;
+    await client.editMessageText(event.msg.chat.id, event.msg.id, msg.text, {
+      entities: msg.entities,
+    });
+  } catch (error) {
+    console.error("Failed to update message:", error);
   }
-  return null;
 }
 
-export function downloadDocument(client: Client, doc: MessageDocument) {
-  return client.download(doc.document.fileId);
+export async function getReplyMessage(client: Client, event: Event) {
+  if (!event.msg.replyToMessageId) {
+    return null;
+  }
+
+  try {
+    return await client.getMessage(
+      event.msg.chat.id,
+      event.msg.replyToMessageId,
+    );
+  } catch (error) {
+    console.error("Failed to get reply message:", error);
+    return null;
+  }
 }
 
-export function longText(_text: string, _name?: string): SendMessageParams {
-  // return text.length > 4096
-  //   ? {
+export async function downloadDocument(
+  client: Client,
+  doc: MessageDocument,
+): Promise<string | null> {
+  try {
+    const chunks: Uint8Array[] = [];
+    for await (const chunk of client.download(doc.document.fileId)) {
+      chunks.push(chunk);
+    }
+    const combined = new Uint8Array(
+      chunks.reduce((acc, chunk) => acc + chunk.length, 0),
+    );
+    let offset = 0;
+    for (const chunk of chunks) {
+      combined.set(chunk, offset);
+      offset += chunk.length;
+    }
+    return new TextDecoder().decode(combined);
+  } catch (error) {
+    console.error("Failed to download document:", error);
+    return null;
+  }
+}
 
-  //     }
-  //   : pre(text.trim(), "").send;
-  return {};
+export function createLongMessage(text: string, filename?: string) {
+  if (text.length <= 4096) {
+    return { text: text.trim() };
+  }
+
+  const document = new TextEncoder().encode(text);
+  return {
+    document,
+    fileName: filename || "output.txt",
+    caption: "Output too long, sent as file",
+  };
 }

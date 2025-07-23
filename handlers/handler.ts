@@ -1,5 +1,4 @@
-import { Client as MTKrutoClient, Context } from "@mtkruto/mtkruto";
-import type { WithFilter } from "../deps.ts";
+import { Client as MTKrutoClient, Context, WithFilter } from "$mtkruto";
 
 export type NewMessageEvent = WithFilter<Context, "message:text">;
 export type EditedMessageEvent = WithFilter<Context, "editedMessage:text">;

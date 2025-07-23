@@ -1,5 +1,5 @@
+import { match } from "$mtkruto-filters";
 import { HandleFuncResult, Handler, HandlerFuncParams } from "./handler.ts";
-import { match } from "../deps.ts";
 
 export type MessageHandlerFunc<T extends object> = ({
   client,

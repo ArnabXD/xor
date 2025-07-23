@@ -26,9 +26,9 @@ manager.installMultiple(
   await ModuleManager.files(
     Object.keys(localStorage)
       .filter((v) => v.startsWith("module_"))
-      .map((v) => localStorage.getItem(v)!)
+      .map((v) => localStorage.getItem(v)!),
   ),
-  true
+  true,
 );
 
 client.on("message:text", manager.handler);

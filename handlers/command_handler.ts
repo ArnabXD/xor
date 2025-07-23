@@ -1,4 +1,4 @@
-import { isMessageType } from "@mtkruto/mtkruto";
+import { isMessageType } from "$mtkruto";
 import { HandleFuncResult, HandlerFuncParams } from "./handler.ts";
 import { MessageHandler, MessageHandlerParams } from "./message_handler.ts";
 import { getReplyMessage } from "../helpers.ts";
@@ -26,7 +26,7 @@ export class CommandHandler extends MessageHandler<CommandHandlerFuncParams> {
   constructor(
     public name: string,
     public override func: CommandHandlerFunc<CommandHandlerFuncParams>,
-    public override params: CommandHandlerParams = {}
+    public override params: CommandHandlerParams = {},
   ) {
     super(func, params);
     // this.params.rawInput = this.params.rawInput ?? true;

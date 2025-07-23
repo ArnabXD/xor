@@ -10,7 +10,7 @@ const cmdPrefix = makeValidator((input) => {
     return input;
   }
   log.warn(
-    "falling back to '\\' for COMMAND_PREFIX: a single symbol excluding @, # and $ was expected"
+    "falling back to '\\' for COMMAND_PREFIX: a single symbol excluding @, # and $ was expected",
   );
   Deno.exit();
   return "\\";
@@ -21,7 +21,7 @@ const inputPrefix = makeValidator((input) => {
     return input;
   }
   log.warn(
-    "falling back to '>' for INPUT_PREFIX: a single symbol excluding @, #, $ and COMMAND_PREFIX was expected"
+    "falling back to '>' for INPUT_PREFIX: a single symbol excluding @, #, $ and COMMAND_PREFIX was expected",
   );
   return "\\";
 });

@@ -1,5 +1,5 @@
 // import * as log from "@std/log";
-import { Client as MTKrutoClient } from "@mtkruto/mtkruto";
+import { Client as MTKrutoClient } from "$mtkruto";
 
 export const sensitives = [
   /([+]?\d{1,3}([-\s]+)?|)\d{3}([-\s]+)?\d{3}([-\s]+)?\d{4}/,

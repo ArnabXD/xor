@@ -1,6 +1,6 @@
 import * as log from "@std/log";
 import { join, resolve, toFileUrl } from "@std/path";
-import { isMessageType } from "@mtkruto/mtkruto";
+import { isMessageType } from "$mtkruto";
 
 import { bold, fmt } from "./deps.ts";
 import { CommandHandler, End, Event } from "./handlers/mod.ts";
@@ -35,15 +35,12 @@ export function managerModule(manager: ModuleManager): Module {
             await updateMessage(
               client,
               event,
-              "Could not download the module."
+              "Could not download the module.",
             );
             return;
           }
           path = join(externals, `.${reply.document.fileId}.ts`);
-          await Deno.writeTextFile(
-            path,
-            typeof result === "string" ? result : result.toString()
-          );
+          await Deno.writeTextFile(path, result);
           spec = ModuleManager.pathToSpec(path);
         }
         let module;
@@ -89,7 +86,7 @@ export function managerModule(manager: ModuleManager): Module {
           event,
           `${uninstalled <= 0 ? "No" : uninstalled} module${
             uninstalled == 1 ? "" : "s"
-          } uninstalled.`
+          } uninstalled.`,
         );
       }),
       new CommandHandler("disable", async ({ client, event, args }) => {
@@ -109,7 +106,7 @@ export function managerModule(manager: ModuleManager): Module {
           event,
           `${disabled <= 0 ? "No" : disabled} module${
             disabled == 1 ? "" : "s"
-          } disabled.`
+          } disabled.`,
         );
       }),
       new CommandHandler("enable", async ({ client, event, args }) => {
@@ -128,7 +125,7 @@ export function managerModule(manager: ModuleManager): Module {
           event,
           `${enabled <= 0 ? "No" : enabled} module${
             enabled == 1 ? "" : "s"
-          } enabled.`
+          } enabled.`,
         );
       }),
       new CommandHandler("modules", async ({ event }) => {
@@ -159,7 +156,7 @@ export function managerModule(manager: ModuleManager): Module {
           await updateMessage(
             client,
             event,
-            "Pass a module name as an argument."
+            "Pass a module name as an argument.",
           );
           return;
         }
@@ -177,9 +174,10 @@ export function managerModule(manager: ModuleManager): Module {
           typeof message === "string" ? message : message.text,
           {
             parseMode: "Markdown",
-            entities:
-              typeof message === "string" ? undefined : message.entities,
-          }
+            entities: typeof message === "string"
+              ? undefined
+              : message.entities,
+          },
         );
       }),
     ],
@@ -318,7 +316,7 @@ export class ModuleManager {
       const filePath = join(path, name);
       try {
         const mod = await ModuleManager.file(
-          ModuleManager.pathToSpec(filePath)
+          ModuleManager.pathToSpec(filePath),
         );
         modules.push(mod);
       } catch (err) {

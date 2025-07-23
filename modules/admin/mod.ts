@@ -1,4 +1,4 @@
-import { Api } from "$grm";
+import { Api } from "$mtkruto";
 import {
   bold,
   CommandHandler,
@@ -14,16 +14,17 @@ const admin: Module = {
   name: "admin",
   handlers: [
     new CommandHandler("promote", async ({ client, event, args }) => {
-      const chat = await event.message.getChat();
+      const chat = event.chat;
       if (!chat) {
         return;
       }
       const user = await getUser(event, client, args, true);
       if (!user) {
-        await event.message.edit({ text: "User not found." });
+        await event.editMessageText(event.msg.id, "User not found.");
         return;
       }
-      if (chat instanceof Api.Channel) {
+      if (Api.is("channel", chat)) {
+        chat.
         const xor = new Methods(client);
         await wrapRpcErrors(event, async () => {
           await xor.promoteChatMember({
